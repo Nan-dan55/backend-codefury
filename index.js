@@ -39,6 +39,54 @@ app.get("/", (req, res) => {
   res.render("home.ejs");
 });
 
+app.get("/login", (req, res) => {
+  res.render("login.ejs");
+});
+
+app.get("/register", (req, res) => {
+  res.render("register.ejs");
+});
+
+app.get("/logout", (req, res) => {
+  req.logout(function (err) {
+    if (err) {
+      return next(err);
+    }
+    res.redirect("/");
+  });
+});
+
+app.get("/home-after-login", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.render("home-after-login.ejs");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.get(
+  "/auth/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  })
+);
+
+app.get(
+  "/auth/google/secrets",
+  passport.authenticate("google", {
+    successRedirect: "/home-after-login",
+    failureRedirect: "/login",
+  })
+);
+
+app.post(
+  "/login",
+  passport.authenticate("local", {
+    successRedirect: "/home-after-login",
+    failureRedirect: "/login",
+  })
+);
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
