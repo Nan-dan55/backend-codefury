@@ -11,7 +11,9 @@ import env from "dotenv";
 const app = express();
 const port = 3000;
 const saltRounds = 10;
+let error1 = "Confirm Password";
 env.config();
+ 
 
 app.use(
   session({
@@ -21,7 +23,7 @@ app.use(
   })
 );
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public"));
+app.use(express.static('public'));
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -36,7 +38,7 @@ const db = new pg.Client({
 db.connect();
 
 app.get("/", (req, res) => {
-  res.render("home.ejs");
+  res.render("starting.ejs");
 });
 
 app.get("/login", (req, res) => {
@@ -44,7 +46,11 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  res.render("register.ejs");
+  
+  res.render("register.ejs",{
+    errorMessage: error1
+  });
+  error1 = "Confirm Password";
 });
 
 app.get("/logout", (req, res) => {
@@ -56,9 +62,9 @@ app.get("/logout", (req, res) => {
   });
 });
 
-app.get("/home-after-login", (req, res) => {
+app.get("/home", (req, res) => {
   if (req.isAuthenticated()) {
-    res.render("home-after-login.ejs");
+    res.render("home.ejs");
   } else {
     res.redirect("/login");
   }
@@ -74,7 +80,7 @@ app.get(
 app.get(
   "/auth/google/secrets",
   passport.authenticate("google", {
-    successRedirect: "/home-after-login",
+    successRedirect: "/home",
     failureRedirect: "/login",
   })
 );
@@ -82,7 +88,7 @@ app.get(
 app.post(
   "/login",
   passport.authenticate("local", {
-    successRedirect: "/home-after-login",
+    successRedirect: "/home",
     failureRedirect: "/login",
   })
 );
@@ -90,8 +96,11 @@ app.post(
 app.post("/register", async (req, res) => {
   const email = req.body.username;
   const password = req.body.password;
+  const confirmPassword = req.body.confirmPassword;
+ 
 
   try {
+    if(password===confirmPassword){
     const checkResult = await db.query("SELECT * FROM users WHERE email = $1", [
       email,
     ]);
@@ -110,11 +119,17 @@ app.post("/register", async (req, res) => {
           const user = result.rows[0];
           req.login(user, (err) => {
             console.log("success");
-            res.redirect("/home-after-login");
+            res.redirect("/home");
           });
         }
       });
     }
+    } else {
+      error1 = "passwords arent matching!"
+      res.redirect("/register");
+
+    }
+   
   } catch (err) {
     console.log(err);
   }
